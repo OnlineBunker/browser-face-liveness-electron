@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <!-- Only local files may load. 'wasm-unsafe-eval' lets ONNX Runtime compile its WebAssembly. -->
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self'; img-src 'self' data:; media-src 'self' mediastream: blob:; connect-src 'self'" />
+  <title>Face Liveness Detector</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <h1>Face Liveness Detector</h1>
+      <p class="subtitle">Live face vs. printed photo / screen &middot; on-device AI anti-spoofing</p>
+    </div>
+    <div class="chips">
+      <span class="chip" id="modelChip"><span class="dot"></span><span id="modelStatus">Loading models…</span></span>
+      <span class="chip" id="cameraChip"><span class="dot"></span><span id="cameraStatus">Camera off</span></span>
+    </div>
+  </header>
+
+  <main class="layout">
+    <section class="card camera-card">
+      <div class="preview">
+        <video id="video" autoplay playsinline muted></video>
+        <canvas id="overlay"></canvas>
+        <div class="placeholder" id="placeholder">
+          <p>Camera is off</p>
+          <small>Press <b>Start camera</b> to begin. Frames are analysed in memory only.</small>
+        </div>
+      </div>
+      <div class="controls">
+        <button id="startBtn" class="btn primary" disabled>Start camera</button>
+        <button id="stopBtn" class="btn" disabled>Stop camera</button>
+      </div>
+      <div class="message" id="message" hidden></div>
+    </section>
+
+    <aside class="side">
+      <section class="card result-card" id="resultCard" data-state="idle">
+        <h2>Result</h2>
+        <div class="verdict" id="verdict">Waiting for camera</div>
+        <div class="verdict-detail" id="verdictDetail">The model runs once a face is visible.</div>
+        <div class="meter"><div class="meter-fill" id="meterFill"></div></div>
+        <div class="meter-labels"><span>Spoof</span><span id="probText">P(live) –</span><span>Live</span></div>
+      </section>
+
+      <section class="card">
+        <h2>Performance</h2>
+        <dl class="metrics">
+          <dt>Face detection</dt><dd id="detMs">–</dd>
+          <dt>Anti-spoof model</dt><dd id="spoofMs">–</dd>
+          <dt>Total per frame</dt><dd id="totalMs">–</dd>
+          <dt>Target</dt><dd>&lt; 500 ms</dd>
+          <dt>Anti-spoof weights</dt><dd id="spoofSize">–</dd>
+          <dt>Detector weights</dt><dd id="detSize">–</dd>
+          <dt>Combined size</dt><dd id="totalSize">–</dd>
+          <dt>Runtime</dt><dd id="runtime">–</dd>
+        </dl>
+      </section>
+
+      <p class="note">
+        Academic demo, not a security product. Models: MiniFASNetV2-SE + YuNet
+        (facenox/face-antispoof-onnx, Apache-2.0). No image is uploaded or saved.
+      </p>
+    </aside>
+  </main>
+
+  <script src="../vendor/ort/ort.wasm.min.js"></script>
+  <script src="liveness.js"></script>
+  <script src="renderer.js"></script>
+</body>
+</html>
