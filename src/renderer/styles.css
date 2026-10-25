@@ -12,6 +12,9 @@
 
 * { box-sizing: border-box; }
 
+/* Make the HTML `hidden` attribute win over display rules like `display: flex`. */
+[hidden] { display: none !important; }
+
 body {
   margin: 0;
   background: var(--bg);
