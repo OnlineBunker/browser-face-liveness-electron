@@ -58,22 +58,21 @@ function createWindow() {
   return win;
 }
 
-app.whenReady().then(async () => {
+app.whenReady().then(() => {
   serveAppFiles();
   allowOnlyCamera();
+  createWindow();
 
-  // On macOS, trigger the system camera prompt up front. If the user denies it,
-  // getUserMedia() fails later and the page shows a clear error.
+  // On macOS, show the system camera prompt early. This must not block the
+  // window: if it is not answered, the page still opens and explains the wait.
   if (process.platform === 'darwin') {
-    await systemPreferences.askForMediaAccess('camera').catch(() => false);
+    systemPreferences.askForMediaAccess('camera').catch(() => false);
   }
 
-  createWindow();
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });
 });
 
-app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') app.quit();
-});
+// Single-window app: closing the window quits it on every platform.
+app.on('window-all-closed', () => app.quit());
