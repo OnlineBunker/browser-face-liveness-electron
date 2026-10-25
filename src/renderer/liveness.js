@@ -5,7 +5,7 @@
   const DETECTOR_SIZE = 640; // YuNet model has a fixed 640x640 input
   const MODEL_SIZE = 128; // MiniFASNet input is 128x128
   const BBOX_EXPANSION = 1.5; // crop 1.5x the face box, as the model was trained
-  const DETECT_THRESHOLD = 0.6; // minimum face-detector score
+  const DETECT_THRESHOLD = 0.8; // minimum face-detector score (upstream default)
   const NMS_IOU = 0.3;
   const MIN_FACE_PX = 64; // upstream: faces smaller than this lose spoof texture
   const LIVE_AT = 0.7; // P(real) at or above this -> likely live
@@ -81,44 +81,58 @@
   }
 
   // The square region the anti-spoof model should see: 1.5x the face box,
-  // centred on the face (upstream preprocess.crop()).
+  // centred on the face, truncated to whole pixels (upstream preprocess.crop()).
   function cropRegion(face) {
     const size = Math.max(face.width, face.height) * BBOX_EXPANSION;
     return {
-      x: face.x + face.width / 2 - size / 2,
-      y: face.y + face.height / 2 - size / 2,
-      size,
+      x: Math.trunc(face.x + face.width / 2 - size / 2),
+      y: Math.trunc(face.y + face.height / 2 - size / 2),
+      size: Math.trunc(size),
     };
   }
 
+  // For one axis: which source pixels each output pixel covers, and by how much.
+  // Output pixel o spans source range [start + o*step, start + (o+1)*step).
+  function areaWeights(start, step, outSize, srcSize) {
+    const table = [];
+    for (let o = 0; o < outSize; o++) {
+      const a = start + o * step;
+      const b = a + step;
+      const items = [];
+      for (let s = Math.floor(a); s < b; s++) {
+        const overlap = Math.min(b, s + 1) - Math.max(a, s);
+        if (overlap > 1e-6) items.push([reflect(s, srcSize), overlap / step]);
+      }
+      table.push(items);
+    }
+    return table;
+  }
+
   // Cut the crop region out of the full frame and resize it to 128x128.
-  // Each output pixel is the average of the source pixels it covers (area
-  // resampling, like OpenCV INTER_AREA). Pixels outside the frame are reflected.
-  // Returns RGBA bytes, 128*128*4.
+  // Each output pixel is the coverage-weighted average of the source pixels it
+  // overlaps (area resampling, like OpenCV INTER_AREA). Pixels outside the
+  // frame are reflected. Returns RGBA bytes, outSize*outSize*4.
   function cropAndResize(rgba, width, height, region, outSize = MODEL_SIZE) {
     const out = new Uint8ClampedArray(outSize * outSize * 4);
     const step = region.size / outSize; // source pixels per output pixel
+    const cols = areaWeights(region.x, step, outSize, width);
+    const rows = areaWeights(region.y, step, outSize, height);
     for (let oy = 0; oy < outSize; oy++) {
-      const y0 = Math.floor(region.y + oy * step);
-      const y1 = Math.max(y0 + 1, Math.floor(region.y + (oy + 1) * step));
       for (let ox = 0; ox < outSize; ox++) {
-        const x0 = Math.floor(region.x + ox * step);
-        const x1 = Math.max(x0 + 1, Math.floor(region.x + (ox + 1) * step));
-        let r = 0, g = 0, b = 0, n = 0;
-        for (let y = y0; y < y1; y++) {
-          const row = reflect(y, height) * width;
-          for (let x = x0; x < x1; x++) {
-            const p = (row + reflect(x, width)) * 4;
-            r += rgba[p];
-            g += rgba[p + 1];
-            b += rgba[p + 2];
-            n++;
+        let r = 0, g = 0, b = 0;
+        for (const [sy, wy] of rows[oy]) {
+          for (const [sx, wx] of cols[ox]) {
+            const p = (sy * width + sx) * 4;
+            const w = wy * wx;
+            r += rgba[p] * w;
+            g += rgba[p + 1] * w;
+            b += rgba[p + 2] * w;
           }
         }
         const o = (oy * outSize + ox) * 4;
-        out[o] = r / n;
-        out[o + 1] = g / n;
-        out[o + 2] = b / n;
+        out[o] = r;
+        out[o + 1] = g;
+        out[o + 2] = b;
         out[o + 3] = 255;
       }
     }

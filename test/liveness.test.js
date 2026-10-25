@@ -80,3 +80,12 @@ test('decodeYuNet drops low scores and merges overlapping boxes (NMS)', () => {
   assert.strictEqual(faces.length, 1);
   assert.ok(Math.abs(faces[0].score - 0.9) < 1e-6);
 });
+
+test('cropAndResize averages by pixel coverage (2x downscale of a stripe pattern)', () => {
+  // Columns alternate black/white, so every 2x2 block averages to mid-grey.
+  const w = 4, h = 4;
+  const rgba = new Uint8ClampedArray(w * h * 4);
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) rgba.set(x % 2 ? [255, 255, 255, 255] : [0, 0, 0, 255], (y * w + x) * 4);
+  const out = L.cropAndResize(rgba, w, h, { x: 0, y: 0, size: 4 }, 2);
+  for (let i = 0; i < 4; i++) assert.ok(Math.abs(out[i * 4] - 127.5) <= 1);
+});
