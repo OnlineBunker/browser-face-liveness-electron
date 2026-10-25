@@ -1,6 +1,7 @@
 // Electron main process: creates the window, serves the app files over a
 // private app:// scheme, and only allows camera (video) permission.
 const { app, BrowserWindow, protocol, net, session, systemPreferences } = require('electron');
+const fs = require('fs');
 const path = require('path');
 const { pathToFileURL } = require('url');
 
@@ -17,8 +18,9 @@ function serveAppFiles() {
     const { pathname } = new URL(request.url);
     const filePath = path.normalize(path.join(APP_ROOT, decodeURIComponent(pathname)));
 
-    // Never serve anything outside the app folder (e.g. app://local/../../etc).
-    if (!filePath.startsWith(APP_ROOT + path.sep)) {
+    // Never serve anything outside the app folder (e.g. app://local/../../etc),
+    // and answer 404 for missing files so the page can show which one is missing.
+    if (!filePath.startsWith(APP_ROOT + path.sep) || !fs.existsSync(filePath)) {
       return new Response('Not found', { status: 404 });
     }
     return net.fetch(pathToFileURL(filePath).toString());
