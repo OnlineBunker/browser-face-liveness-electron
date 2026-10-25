@@ -112,14 +112,10 @@ npm install
 npm start
 ```
 
-> **Node 26 note (verified):** Electron's own installer (`extract-zip`) stops after the
-> first file on Node 26, leaving `node_modules/electron/dist` empty, and `npm start`
-> fails with *"Electron failed to install correctly"*. Use Node 22, or repair it once with:
-> ```bash
-> npx -y node@22 node_modules/electron/install.js
-> ```
-> npm 11 also blocks dependency install scripts unless approved; the approvals for
-> `electron` and `onnxruntime-node` are already in `package.json` (`allowScripts`).
+> **Node 26 note:** Electron's own installer can silently fail to unzip on Node 26.
+> `npm start` checks for this first (`scripts/ensure-electron.js`) and re-downloads and
+> unpacks Electron with the OS's own unzip tool if needed. npm 11's install-script
+> approvals for `electron` and `onnxruntime-node` are already in `package.json`.
 
 Click **Start camera**, allow camera access when macOS asks, and look at the camera.
 Then hold up a printed photo or a phone showing a face to see the spoof result.
@@ -147,7 +143,7 @@ npx electron test/e2e-image.js path/to/face.png
 npm run build
 ```
 
-Produces `release/Face Liveness Detector-1.0.0-mac-arm64.zip` (Apple Silicon, ad-hoc signed).
+Produces `release/Face Liveness Detector-1.0.0-mac-arm64.dmg` and `release/Face Liveness Detector-1.0.0-mac-arm64.zip` (Apple Silicon, ad-hoc signed).
 
 ```bash
 npm run source-zip
@@ -158,12 +154,14 @@ Produces `release/browser-face-liveness-electron-source.zip` (git-tracked files 
 Windows x64: the GitHub Actions workflow **Windows build** (`.github/workflows/windows-build.yml`)
 runs the tests and uploads a ZIP artifact. Run it from the repository's *Actions* tab.
 
-## Extract and launch the macOS app (Apple Silicon)
+## Install and launch the macOS app (Apple Silicon)
 
-1. Double-click `Face Liveness Detector-1.0.0-mac-arm64.zip` (or run
-   `ditto -x -k "Face Liveness Detector-1.0.0-mac-arm64.zip" .`).
-   You get **Face Liveness Detector.app**. Optionally drag it into *Applications*.
-2. The app is not notarised by Apple, so the first launch is blocked when the ZIP
+1. Get the app in one of two ways:
+   - **DMG:** double-click `Face Liveness Detector-1.0.0-mac-arm64.dmg`, then drag
+     **Face Liveness Detector** onto **Applications**.
+   - **ZIP:** double-click `Face Liveness Detector-1.0.0-mac-arm64.zip`. You get
+     **Face Liveness Detector.app**. Drag it into *Applications*.
+2. The app is not notarised by Apple, so the first launch is blocked when the DMG/ZIP
    was downloaded from the internet. Either:
    - right-click the app → **Open** → **Open**, or, on newer macOS, try to open it once and then go to
      *System Settings › Privacy & Security* and click **Open Anyway**; or
@@ -186,6 +184,7 @@ Measured on an Apple M3 Mac, macOS 27.0.1, Electron 38.8.6, ONNX Runtime Web 1.2
 | JS crop vs Python `preprocess.crop` + `INTER_AREA` on 4 fixed boxes | Identical P(live) to 4 decimal places |
 | Latency (median of 5) | detection **≈ 23 ms**, anti-spoof **≈ 9 ms**, whole frame **≈ 37 ms** (target < 500 ms) |
 | Packaged `.app` extracted from the ZIP | Signature valid, models load from `app.asar`, same P(live) 0.9794; `require`/`process` are `undefined` in the page |
+| App installed from the DMG and launched with `open` (like a double-click) | Window opens, models load, P(live) 0.9794 |
 | Missing model file | UI shows "model file missing: antispoof_minifas_int8.onnx (HTTP 404)" |
 | Corrupt model file | UI shows the ONNX Runtime "protobuf parsing failed" error |
 | Blank image | No face |

@@ -5,12 +5,12 @@
   "main": "src/main.js",
   "scripts": {
     "vendor": "node scripts/copy-ort.js",
-    "prestart": "npm run vendor",
+    "prestart": "node scripts/ensure-electron.js && npm run vendor",
     "start": "electron .",
     "pretest": "npm run vendor",
     "test": "node --test test/*.test.js",
-    "build": "npm run vendor && electron-builder --mac zip --arm64",
-    "build:win": "npm run vendor && electron-builder --win zip --x64",
+    "build": "npm run vendor && electron-builder --mac --arm64",
+    "build:win": "npm run vendor && electron-builder --win --x64",
     "source-zip": "node scripts/source-zip.js"
   },
   "author": "Yash Dhankhar",
@@ -42,6 +42,12 @@
     "asar": true,
     "mac": {
       "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "arm64"
+          ]
+        },
         {
           "target": "zip",
           "arch": [
