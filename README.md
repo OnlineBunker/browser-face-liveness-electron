@@ -9,6 +9,9 @@ No image is uploaded or saved.
 > Academic demonstration for a college assignment, **not** a production biometric
 > security system.
 
+**Try it in the browser (no install):** https://onlinebunker.github.io/browser-face-liveness-electron/
+(same models and code as the desktop app; needs a webcam and Chrome, Edge or Safari).
+
 ![status](https://img.shields.io/badge/platform-macOS%20arm64%20%7C%20Windows%20x64-blue)
 
 ## What it shows
@@ -151,6 +154,8 @@ npm run source-zip
 
 Produces `release/browser-face-liveness-electron-source.zip` (git-tracked files only).
 
+Browser version: `node scripts/build-web.js` writes `_site/`; the **Deploy web version** workflow publishes it to GitHub Pages on every push to `main`.
+
 Windows x64: the GitHub Actions workflow **Windows build** (`.github/workflows/windows-build.yml`)
 runs the tests and uploads a ZIP artifact. Run it from the repository's *Actions* tab.
 
@@ -161,14 +166,17 @@ runs the tests and uploads a ZIP artifact. Run it from the repository's *Actions
      **Face Liveness Detector** onto **Applications**.
    - **ZIP:** double-click `Face Liveness Detector-1.0.0-mac-arm64.zip`. You get
      **Face Liveness Detector.app**. Drag it into *Applications*.
-2. The app is not notarised by Apple, so the first launch is blocked when the DMG/ZIP
-   was downloaded from the internet. Either:
-   - right-click the app → **Open** → **Open**, or, on newer macOS, try to open it once and then go to
-     *System Settings › Privacy & Security* and click **Open Anyway**; or
-   - in Terminal (adjust the path):
-     ```bash
-     xattr -dr com.apple.quarantine "/Applications/Face Liveness Detector.app"
-     ```
+2. **First launch (required on every other Mac).** The app is not notarised by Apple
+   (that needs a paid developer account), so macOS blocks it when it was downloaded or
+   AirDropped. This was reproduced and the fix below was confirmed to work. Open
+   **Terminal** and run this once (after moving the app into Applications):
+   ```bash
+   xattr -dr com.apple.quarantine "/Applications/Face Liveness Detector.app"
+   ```
+   Then double-click the app. If you prefer no Terminal: copy the app over with a
+   **USB stick** (no download mark is added), or use the browser version above.
+   On newer macOS the old right-click → Open shortcut no longer works, and the
+   *Privacy & Security → Open Anyway* button does not always appear.
 3. Click **Start camera** and choose **Allow** in the macOS camera prompt.
    If you clicked *Don't Allow*, enable it in *System Settings › Privacy & Security › Camera* and restart the app.
 
@@ -185,6 +193,8 @@ Measured on an Apple M3 Mac, macOS 27.0.1, Electron 38.8.6, ONNX Runtime Web 1.2
 | Latency (median of 5) | detection **≈ 23 ms**, anti-spoof **≈ 9 ms**, whole frame **≈ 37 ms** (target < 500 ms) |
 | Packaged `.app` extracted from the ZIP | Signature valid, models load from `app.asar`, same P(live) 0.9794; `require`/`process` are `undefined` in the page |
 | App installed from the DMG and launched with `open` (like a double-click) | Window opens, models load, P(live) 0.9794 |
+| Browser version served over HTTP, tested in a browser | Models load, no console errors, same P(live) 0.9794 on the test frame |
+| App marked as downloaded (quarantine) on my Mac | Did **not** launch; works after the `xattr` command (also confirmed by the app's owner on a second Mac) |
 | Missing model file | UI shows "model file missing: antispoof_minifas_int8.onnx (HTTP 404)" |
 | Corrupt model file | UI shows the ONNX Runtime "protobuf parsing failed" error |
 | Blank image | No face |
