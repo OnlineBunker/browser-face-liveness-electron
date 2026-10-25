@@ -8,7 +8,7 @@
     "prestart": "npm run vendor",
     "start": "electron .",
     "pretest": "npm run vendor",
-    "test": "node --test test/",
+    "test": "node --test test/*.test.js",
     "build": "npm run vendor && electron-builder --mac zip --arm64",
     "build:win": "npm run vendor && electron-builder --win zip --x64",
     "source-zip": "node scripts/source-zip.js"
