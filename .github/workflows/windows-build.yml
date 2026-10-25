@@ -1,0 +1,25 @@
+# Builds the Windows x64 ZIP on a GitHub-hosted Windows runner.
+# Run it from the Actions tab (workflow_dispatch) or by pushing to main.
+name: Windows build
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - run: npm run build:win
+      - uses: actions/upload-artifact@v4
+        with:
+          name: face-liveness-windows-x64
+          path: release/*.zip
