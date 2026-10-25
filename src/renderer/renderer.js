@@ -224,6 +224,10 @@ async function startCamera() {
   showMessage('');
   $('startBtn').disabled = true;
   setChip('cameraChip', 'cameraStatus', 'busy', 'Starting camera…');
+  // If the OS permission prompt is open, getUserMedia() waits until it is answered.
+  const hint = setTimeout(() => {
+    if (!stream) showMessage('Waiting for camera permission. Look for a system prompt and click Allow.');
+  }, 4000);
   try {
     stream = await navigator.mediaDevices.getUserMedia({
       video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: 'user' },
@@ -235,6 +239,7 @@ async function startCamera() {
     overlay.height = video.videoHeight;
     $('placeholder').hidden = true;
     $('stopBtn').disabled = false;
+    showMessage('');
     setChip('cameraChip', 'cameraStatus', 'ok', `Camera on · ${video.videoWidth}×${video.videoHeight}`);
     history = [];
     loop();
@@ -243,6 +248,8 @@ async function startCamera() {
     $('startBtn').disabled = false;
     setChip('cameraChip', 'cameraStatus', 'error', 'Camera error');
     showMessage(cameraErrorText(err));
+  } finally {
+    clearTimeout(hint);
   }
 }
 
