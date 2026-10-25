@@ -26,5 +26,46 @@
     "electron@38.8.6": true,
     "onnxruntime-node@1.20.1": true
   },
-  "productName": "Face Liveness Detector"
+  "productName": "Face Liveness Detector",
+  "build": {
+    "appId": "edu.rishihood.faceliveness",
+    "productName": "Face Liveness Detector",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "src/**/*",
+      "models/**/*",
+      "package.json",
+      "!src/**/*.map"
+    ],
+    "asar": true,
+    "mac": {
+      "target": [
+        {
+          "target": "zip",
+          "arch": [
+            "arm64"
+          ]
+        }
+      ],
+      "category": "public.app-category.education",
+      "identity": "-",
+      "extendInfo": {
+        "NSCameraUsageDescription": "The camera is used to check whether the face in front of it is live. Frames are analysed on this Mac only and are never saved or uploaded."
+      },
+      "hardenedRuntime": false
+    },
+    "win": {
+      "target": [
+        {
+          "target": "zip",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "artifactName": "${productName}-${version}-${os}-${arch}.${ext}"
+  }
 }
