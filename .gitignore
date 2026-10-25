@@ -1,7 +1,8 @@
-node_modules/
+*.log
+.DS_Store
+Submission/
+_site/
 dist/
+node_modules/
 release/
 src/vendor/
-.DS_Store
-*.log
-Submission/
