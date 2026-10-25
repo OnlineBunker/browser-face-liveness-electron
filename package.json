@@ -67,5 +67,8 @@
       ]
     },
     "artifactName": "${productName}-${version}-${os}-${arch}.${ext}"
+  },
+  "engines": {
+    "node": ">=20"
   }
 }
